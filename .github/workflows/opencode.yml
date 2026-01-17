@@ -1,32 +1,108 @@
+# OpenCode AI Agent - GitHub Actions Workflow
+# Docs: https://opencode.ai/docs/github/
+# Provider: Venice AI (https://venice.ai)
+#
+# This workflow enables AI-powered coding assistance through GitHub comments and PR automation.
+# Commands: /oc or /opencode followed by your request
+#
+# Examples:
+#   /oc fix this issue
+#   /oc explain this code
+#   /opencode add error handling here
+#   /oc review this PR
+#
+# Setup:
+#   1. Install GitHub App: https://github.com/apps/opencode-agent
+#   2. Add VENICE_API_KEY to repository secrets (Settings > Secrets > Actions)
+#   3. Get your API key from: https://venice.ai/settings/api
+
 name: opencode
 
 on:
+  # Trigger on issue and PR comments
   issue_comment:
     types: [created]
+  
+  # Trigger on PR review comments (inline code comments)
   pull_request_review_comment:
     types: [created]
+  
+  # Auto-review new PRs (optional - comment out if not needed)
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
-  opencode:
+  # ============================================
+  # Comment-triggered agent (issues & PRs)
+  # ============================================
+  opencode-comment:
+    name: OpenCode Agent (Comment)
     if: |
-      contains(github.event.comment.body, ' /oc') ||
-      startsWith(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, ' /opencode') ||
-      startsWith(github.event.comment.body, '/opencode')
+      (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+      (
+        contains(github.event.comment.body, '/oc') ||
+        contains(github.event.comment.body, '/opencode')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better context
+          persist-credentials: false
+
+      - name: Run OpenCode
+        uses: anomalyco/opencode/github@v1
+        env:
+          VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
+        with:
+          # Venice AI models - choose based on your needs:
+          # - venice/qwen3-235b          : Best for complex reasoning & coding
+          # - venice/venice-uncensored   : Creative/unrestricted responses  
+          # - venice/mistral-31-24b      : Fast, vision-capable
+          # - venice/qwen3-4b            : Lightweight, quick responses
+          # - venice/zai-org-glm-4.6     : Flagship reasoning model
+          model: venice/qwen3-235b
+          # share: true  # Enable session sharing for debugging
+
+  # ============================================
+  # Auto-review PRs when opened/updated
+  # ============================================
+  opencode-review:
+    name: OpenCode PR Review
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
 
-      - name: Run opencode
-        uses: anomalyco/opencode/github@latest
+      - name: Run OpenCode Review
+        uses: anomalyco/opencode/github@v1
         env:
           VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
         with:
+          model: venice/qwen3-235b
+          prompt: |
+            Review this pull request thoroughly:
+            
+            1. **Code Quality**: Check for bugs, logic errors, and anti-patterns
+            2. **Security**: Look for potential vulnerabilities
+            3. **Performance**: Identify any performance concerns
+            4. **Best Practices**: Ensure code follows project conventions
+            5. **Testing**: Check if changes have adequate test coverage
+            
+            Provide actionable feedback. If everything looks good, approve with a brief summary.
+            Be constructive and specific in your suggestions.
