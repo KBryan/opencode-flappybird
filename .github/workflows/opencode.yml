@@ -1,4 +1,4 @@
-name: opencode
+name: opencode-debug
 
 on:
   issue_comment:
@@ -6,38 +6,15 @@ on:
   pull_request_review_comment:
     types: [created]
 
-concurrency:
-  group: opencode-${{ github.repository }}-${{ github.event.comment.id }}
-  cancel-in-progress: true
-
 jobs:
-  opencode:
-    if: |
-      github.event.comment.user.type != 'Bot' &&
-      github.event.comment.author_association == 'OWNER' &&
-      (
-        startsWith(github.event.comment.body, '/oc') ||
-        startsWith(github.event.comment.body, '/opencode')
-      )
+  debug:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    permissions:
-      id-token: write
-      contents: write
-      pull-requests: write
-      issues: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-
-      - name: Run opencode
-        uses: anomalyco/opencode/github@latest
-        env:
-          VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
-        with:
-          model: venice/qwen3-coder-480b-a35b-instruct
-          token: ${{ github.token }}
+      - name: Print event context
+        run: |
+          echo "actor=${{ github.actor }}"
+          echo "comment_user_type=${{ github.event.comment.user.type }}"
+          echo "author_association=${{ github.event.comment.author_association }}"
+          echo "comment_body<<EOF"
+          echo "${{ github.event.comment.body }}"
+          echo "EOF"
