@@ -35,7 +35,7 @@ jobs:
           VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          model: qwen3-coder-480b-a35b-instruct
+          model: venice/qwen3-coder-480b-a35b-instruct
           use_github_token: true
           share: false  # <-- ADD THIS LINE
           prompt: |
