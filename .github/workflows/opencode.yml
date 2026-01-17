@@ -6,20 +6,28 @@ on:
   pull_request_review_comment:
     types: [created]
 
+concurrency:
+  group: opencode-${{ github.repository }}-${{ github.event.comment.id }}
+  cancel-in-progress: true
+
 jobs:
   opencode:
+    # Run only when:
+    # - comment contains /oc or /opencode
+    # - AND commenter is the repo OWNER, or is explicitly allowlisted below
     if: |
-      (contains(github.event.comment.body, '/oc') ||
-       contains(github.event.comment.body, '/opencode')) &&
-      (github.event.comment.author_association == 'OWNER' ||
-       github.event.comment.author_association == 'MEMBER' ||
-       github.event.comment.author_association == 'COLLABORATOR')
+      (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        contains(fromJson('["KBryan"]'), github.event.comment.user.login)
+      )
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write
+      pull-requests: write
+      issues: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -27,9 +35,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Run opencode
+      - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
         env:
           VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
         with:
           model: venice/qwen3-coder-480b-a35b-instruct
+          token: ${{ github.token }}
+          # share: false
