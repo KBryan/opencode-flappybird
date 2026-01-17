@@ -6,16 +6,13 @@ on:
   pull_request_review_comment:
     types: [created]
 
-concurrency:
-  group: opencode-${{ github.repository }}-${{ github.event.comment.id }}
-  cancel-in-progress: true
-
 jobs:
   opencode:
     if: |
       (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) &&
       github.event.comment.author_association == 'OWNER'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       id-token: write
       contents: write
@@ -23,25 +20,20 @@ jobs:
       issues: write
 
     steps:
-      - name: Debug trigger
-        run: |
-          echo "actor=${{ github.actor }}"
-          echo "association=${{ github.event.comment.author_association }}"
-          echo "body<<EOF"
-          echo "${{ github.event.comment.body }}"
-          echo "EOF"
-
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: KBryan/actions-checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
 
       - name: Run opencode
-        uses: anomalyco/opencode/github@latest
+        uses: KBryan/actions-opencode@v1
         env:
           VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
         with:
           model: venice/qwen3-coder-480b-a35b-instruct
           token: ${{ github.token }}
-          # share: false
+          prompt: |
+            Implement the request.
+            Do not start dev servers or watch processes.
+            Commit changes and open a PR.
