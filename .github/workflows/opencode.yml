@@ -23,6 +23,14 @@ jobs:
       issues: write
 
     steps:
+      - name: Debug trigger
+        run: |
+          echo "actor=${{ github.actor }}"
+          echo "association=${{ github.event.comment.author_association }}"
+          echo "body<<EOF"
+          echo "${{ github.event.comment.body }}"
+          echo "EOF"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
