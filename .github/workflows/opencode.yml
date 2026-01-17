@@ -12,15 +12,9 @@ concurrency:
 
 jobs:
   opencode:
-    # Run only when:
-    # - comment contains /oc or /opencode
-    # - AND commenter is the repo OWNER, or is explicitly allowlisted below
     if: |
       (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) &&
-      (
-        github.event.comment.author_association == 'OWNER' ||
-        contains(fromJson('["KBryan"]'), github.event.comment.user.login)
-      )
+      github.event.comment.author_association == 'OWNER'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -30,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Run OpenCode
+      - name: Run opencode
         uses: anomalyco/opencode/github@latest
         env:
           VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
