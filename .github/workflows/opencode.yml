@@ -35,7 +35,7 @@ jobs:
           VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          model: venice/qwen3-4b
+          model: venice/grok-code-fast-1
           use_github_token: true
           share: false  # <-- ADD THIS LINE
           prompt: |
