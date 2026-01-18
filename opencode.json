@@ -1,4 +1,4 @@
 {
   "$schema": "https://opncd.ai/config.json",
-  "share": "disabled"
+  "share": "true"
 }
